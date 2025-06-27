@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Sequence, Optional, List
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -357,3 +357,22 @@ async def select_graph_by_description_id(
     )
     result = await session.execute(statement)
     return result.scalars().first()
+
+
+async def search_terms_by_embedding(
+    qv: List[float],
+    k: int,
+    session: AsyncSession
+) -> Sequence[Terms]:
+    distance_expr = Embeddings.embedding.op("<->")(qv)
+
+    stmt = (
+        select(Terms)
+        .join(Descriptions, Descriptions.term_id == Terms.id)
+        .join(Embeddings, Embeddings.description_id == Descriptions.id)
+        .order_by(distance_expr)
+        .limit(k)
+    )
+
+    result = await session.execute(stmt)
+    return result.scalars().all()
