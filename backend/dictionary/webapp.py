@@ -2,6 +2,7 @@ from loguru import logger
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dictionary.database.models import *
 from dictionary.database.engine import init_db
 from dictionary.misc.utils import check_nltk_resource
@@ -47,5 +48,14 @@ app = FastAPI(
     swagger_ui_parameters={"operationsSorter": "method"},
     lifespan=lifespan,
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # or "*" for testing only
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 for r in routers:
     app.include_router(r)

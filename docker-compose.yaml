@@ -6,8 +6,8 @@ services:
       - "5432:5432"
     networks:
       - db_network
-    # volumes:
-    #   - ./data/postgres:/var/lib/postgresql/data
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: graphs
       POSTGRES_USER: user
@@ -15,8 +15,7 @@ services:
     restart: always
 
   backend:
-    build:
-      context: ./backend
+    image: dictionary/backend:1.0
     working_dir: /app
     container_name: backend
     ports:

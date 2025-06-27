@@ -33,44 +33,49 @@ router = APIRouter(
     response_model=TermsResponse,
 )
 async def create_term(body_obj: Term, session: AsyncSession = Depends(get_session)):
-    terms_object = await select_term_by_raw_test(
+    raw_text_terms_object = await select_term_by_raw_test(
         raw_text=body_obj.raw_text, session=session
     )
 
-    if terms_object is None:
-        lang = body_obj.language
-        if not lang:
-            lang = detect_language(text=body_obj.raw_text)
-        cleaned_tokens = clean_text(text=body_obj.raw_text, language=lang)
-        cleaned_text = " ".join(cleaned_tokens)
-        cleaned_text_terms_object = await select_term_by_cleaned_text(
-            cleaned_text=cleaned_text, session=session
+    if raw_text_terms_object:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Term with the same cleaned text already exists.",
         )
-        if cleaned_text_terms_object:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Term with the same cleaned text already exists.",
-            )
-        stemmed_tokens = stem_tokens(cleaned_tokens, language=lang)
-        stemmed_text = " ".join(stemmed_tokens)
-        stemmed_text_terms_object = await select_term_by_stemmed_text(
-            stemmed_text=stemmed_text, session=session
+
+    lang = body_obj.language
+    if not lang:
+        lang = detect_language(text=body_obj.raw_text)
+    cleaned_tokens = clean_text(text=body_obj.raw_text, language=lang)
+    cleaned_text = " ".join(cleaned_tokens)
+    cleaned_text_terms_object = await select_term_by_cleaned_text(
+        cleaned_text=cleaned_text, session=session
+    )
+    if cleaned_text_terms_object:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Term with the same cleaned text already exists.",
         )
-        if stemmed_text_terms_object:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Term with the same stemmed text already exists.",
-            )
-        terms_object = Terms(
-            topic_id=body_obj.topic_id,
-            language=lang.value,
-            raw_text=body_obj.raw_text,
-            cleaned_text=cleaned_text,
-            stemmed_text=stemmed_text,
-            first_letter=stemmed_tokens[0][0],
-            info=body_obj.info,
+    stemmed_tokens = stem_tokens(cleaned_tokens, language=lang)
+    stemmed_text = " ".join(stemmed_tokens)
+    stemmed_text_terms_object = await select_term_by_stemmed_text(
+        stemmed_text=stemmed_text, session=session
+    )
+    if stemmed_text_terms_object:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Term with the same stemmed text already exists.",
         )
-        terms_object = await save_term(term=terms_object, session=session)
+    terms_object = Terms(
+        topic_id=body_obj.topic_id,
+        language=lang.value,
+        raw_text=body_obj.raw_text,
+        cleaned_text=cleaned_text,
+        stemmed_text=stemmed_text,
+        first_letter=stemmed_tokens[0][0],
+        info=body_obj.info,
+    )
+    terms_object = await save_term(term=terms_object, session=session)
 
     return TermsResponse(
         id=terms_object.id,

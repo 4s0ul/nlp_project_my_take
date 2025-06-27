@@ -40,59 +40,64 @@ router = APIRouter(
 async def create_description(
     body_obj: Description, session: AsyncSession = Depends(get_session)
 ):
-    descriptions_object = await select_description_by_raw_text(
+    raw_text_descriptions_object = await select_description_by_raw_text(
         raw_text=body_obj.raw_text, session=session
     )
 
-    if descriptions_object is None:
-        lang = body_obj.language
-        if not lang:
-            lang = detect_language(text=body_obj.raw_text)
-        cleaned_tokens = clean_text(text=body_obj.raw_text, language=lang)
-        cleaned_text = " ".join(cleaned_tokens)
-        cleaned_text_terms_object = await select_description_by_cleaned_text(
-            cleaned_text=cleaned_text, session=session
+    if raw_text_descriptions_object:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Description with the same raw text already exists.",
         )
-        if cleaned_text_terms_object:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Description with the same cleaned text already exists.",
-            )
-        stemmed_tokens = stem_tokens(cleaned_tokens, language=lang)
-        stemmed_text = " ".join(stemmed_tokens)
-        stemmed_text_terms_object = await select_description_by_stemmed_text(
-            stemmed_text=stemmed_text, session=session
+
+    lang = body_obj.language
+    if not lang:
+        lang = detect_language(text=body_obj.raw_text)
+    cleaned_tokens = clean_text(text=body_obj.raw_text, language=lang)
+    cleaned_text = " ".join(cleaned_tokens)
+    cleaned_text_terms_object = await select_description_by_cleaned_text(
+        cleaned_text=cleaned_text, session=session
+    )
+    if cleaned_text_terms_object:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Description with the same cleaned text already exists.",
         )
-        if stemmed_text_terms_object:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Description with the same stemmed text already exists.",
-            )
-        descriptions_object = Descriptions(
-            term_id=body_obj.term_id,
-            language=lang.value,
-            raw_text=body_obj.raw_text,
-            cleaned_text=" ".join(cleaned_tokens),
-            stemmed_text=" ".join(stemmed_tokens),
-            info=body_obj.info,
+    stemmed_tokens = stem_tokens(cleaned_tokens, language=lang)
+    stemmed_text = " ".join(stemmed_tokens)
+    stemmed_text_terms_object = await select_description_by_stemmed_text(
+        stemmed_text=stemmed_text, session=session
+    )
+    if stemmed_text_terms_object:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Description with the same stemmed text already exists.",
         )
-        descriptions_object = await save_description(
-            description=descriptions_object, session=session
+    descriptions_object = Descriptions(
+        term_id=body_obj.term_id,
+        language=lang.value,
+        raw_text=body_obj.raw_text,
+        cleaned_text=" ".join(cleaned_tokens),
+        stemmed_text=" ".join(stemmed_tokens),
+        info=body_obj.info,
+    )
+    descriptions_object = await save_description(
+        description=descriptions_object, session=session
+    )
+    asyncio.create_task(
+        create_embedding(
+            text=" ".join(stemmed_tokens),
+            lang=lang,
+            description_id=descriptions_object.id,
         )
-        asyncio.create_task(
-            create_embedding(
-                text=" ".join(stemmed_tokens),
-                lang=lang,
-                description_id=descriptions_object.id,
-            )
+    )
+    asyncio.create_task(
+        create_triplets_and_graphs(
+            text=body_obj.raw_text,
+            lang=lang,
+            description_id=descriptions_object.id,
         )
-        asyncio.create_task(
-            create_triplets_and_graphs(
-                text=body_obj.raw_text,
-                lang=lang,
-                description_id=descriptions_object.id,
-            )
-        )
+    )
 
     return DescriptionsResponse(
         id=descriptions_object.id,
