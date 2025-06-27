@@ -1,19 +1,17 @@
+# frontend/Dockerfile
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Скопировать package.json и package-lock.json (или yarn.lock), поставить зависимости
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy rest of the code
+# Скопировать весь исходник
 COPY . .
 
-# Build the SvelteKit app
-RUN npm run build
-
-# Expose the port used by SvelteKit
+# Открываем порт Vite (3000 по умолчанию)
 EXPOSE 3000
 
-# Run the app
-CMD ["node", "build"]
+# Запускаем Vite в режиме разработки, принимаем запросы извне
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

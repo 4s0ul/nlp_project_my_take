@@ -6,8 +6,8 @@ services:
       - "5432:5432"
     networks:
       - db_network
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+    # volumes:
+    #   - ./data/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: graphs
       POSTGRES_USER: user
@@ -33,16 +33,14 @@ services:
     restart: always
 
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   container_name: stemming-app
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - db_network
-  #   depends_on:
-  #     - app
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - db_network
 
 networks:
   db_network:
