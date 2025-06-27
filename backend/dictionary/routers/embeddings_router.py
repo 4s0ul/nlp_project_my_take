@@ -6,6 +6,8 @@ from dictionary.database.engine import get_session
 from dictionary.database.queries import search_terms_by_embedding
 from dictionary.nlp.embeddings import vectorize_text
 from dictionary.nlp.languages import detect_language, Lang
+from dictionary.nlp.preprocessing import clean_text
+from dictionary.nlp.stemming import stem_tokens
 from dictionary.views import Term, ProcessedTerm, TermsResponse
 
 router = APIRouter(tags=["search"])
@@ -33,7 +35,10 @@ async def search_terms(
     except ValueError as e:
         raise HTTPException(400, f"Language detection failed: {e}")
 
-    vec = vectorize_text(query, lang)
+    cleaned_tokens = clean_text(text=query, language=lang)
+    stemmed_tokens = stem_tokens(cleaned_tokens, language=lang)
+    stemmed_text = " ".join(stemmed_tokens)
+    vec = vectorize_text(stemmed_text, lang)
     if vec is None:
         raise HTTPException(500, "Failed to vectorize your query")
 
