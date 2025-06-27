@@ -12,6 +12,7 @@ from dictionary.routers import (
     descriptions_router,
     triplets_router,
     graphs_router,
+    embeddings_router,
 )
 
 
@@ -21,6 +22,7 @@ routers = [
     descriptions_router.router,
     triplets_router.router,
     graphs_router.router,
+    embeddings_router.router,
 ]
 
 
