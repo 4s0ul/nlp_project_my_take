@@ -256,6 +256,7 @@ async def fetch_terms_by_letter(
     limit: int = 5,
     session: AsyncSession = Depends(get_session),
 ):
+    first_letter = first_letter.lower()
     terms_objects = await select_terms_by_first_letter(
         first_letter=first_letter, topic_id=topic_id, limit=limit, session=session
     )

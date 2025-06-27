@@ -21,10 +21,9 @@ async def create_triplets_and_graphs(
 
     if not triplets:
         logger.error(f"Couldn't extract triplets from {text=}")
-        return
 
-    empty_graph = await create_graph()
-    graph = await add_triplets_to_graph(graph=empty_graph, triplets=triplets)
+    graph = await create_graph()
+    graph = await add_triplets_to_graph(graph=graph, triplets=triplets)
     serialized_graph = await serialize_graph(graph)
 
     async with async_session() as session:
@@ -63,10 +62,9 @@ async def update_triplets_and_graphs(
 
     if not triplets:
         logger.error(f"Couldn't extract triplets from {text=}")
-        return
 
-    empty_graph = await create_graph()
-    graph = await add_triplets_to_graph(graph=empty_graph, triplets=triplets)
+    graph = await create_graph()
+    graph = await add_triplets_to_graph(graph=graph, triplets=triplets)
     serialized_graph = await serialize_graph(graph)
 
     async with async_session() as session:

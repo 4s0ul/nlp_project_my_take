@@ -41,7 +41,7 @@ async def fetch_graph_by_description_id(
     
     if graphs_object is None:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Graphs object with {description_id=} not found!",
         )
 
